@@ -1,0 +1,65 @@
+# NetworkPolicies predefinition
+# rules can be added to groups. Groups or rules can be applied to projects.
+#
+networkPolicy:
+  config:
+    # Generate NetworkPolicy to allow communication inside of the project namespace?
+    # Only gets applied when other networkpolices are active on the project
+    allowNamespace: true
+
+    default:
+      groups: []
+      rules: []
+
+  groups:
+    restricted:
+      - allow-dns
+      - allow-proxy
+      - allow-ingress
+
+  rules:
+  # Allow DNS to all Namespaces, deny everything else
+    allow-dns:
+      podSelector: {}
+      policyTypes:
+      - Egress
+      egress:
+      - ports:
+        - port: 53
+          protocol: UDP
+        to:
+        - namespaceSelector: {}
+
+    # Allow access to internet proxy
+    allow-proxy:
+      podSelector: {}
+      policyTypes:
+      - Egress
+      egress:
+      - ports:
+        - port: 80
+          protocol: TCP
+        - port: 3128
+          protocol: TCP
+        to:
+        - namespaceSelector:
+            matchLabels:
+              app.heqet.gnu.one/name: proxy
+
+    # Allow access from ingress-external
+    allow-ingress:
+      podSelector: {}
+      policyTypes:
+      - Ingress
+      ingress:
+      - from:
+        - namespaceSelector:
+            matchLabels:
+              project.heqet.gnu.one/name: ingress
+
+    allow-ingress-traffic:
+      podSelector: {}
+      policyTypes:
+      - Ingress
+      ingress:
+      - {}

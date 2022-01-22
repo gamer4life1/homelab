@@ -1,0 +1,21 @@
+# Bootstrap heqet as app-of-apps
+# you'll want to configure spec.source.repuURL to your userdata-repo
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: apps-of-heqet
+  namespace: argocd
+spec:
+  destination:
+    namespace: argocd
+    server: 'https://kubernetes.default.svc'
+  source:
+    path: .
+    repoURL: 'https://github.com/lib42/heqet-apps'
+    targetRevision: main
+  project: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

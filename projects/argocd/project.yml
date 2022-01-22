@@ -1,0 +1,15 @@
+config:
+  description: ArgoCD - Continous Deployment from Git
+
+apps:
+  - name: argocd
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argo-cd
+    targetRevision: 3.31.0
+    syncWave: '0'
+  
+  # This will bootstrap our apps & keep them in sync
+  - name: apps-of-heqet
+    repoURL: https://github.com/lib42/heqet-apps
+    path: .
+    targetRevision: main

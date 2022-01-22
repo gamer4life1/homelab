@@ -1,0 +1,129 @@
+## ArgoCD configuration
+## Ref: https://github.com/argoproj/argo-cd
+##
+
+# Optional CRD installation for those without Helm hooks
+installCRDs: true
+
+global:
+  image:
+    repository: quay.io/argoproj/argocd
+    tag: v2.2.3
+#    imagePullPolicy: IfNotPresent
+  securityContext:
+    runAsUser: 999
+    runAsGroup: 999
+    fsGroup: 999
+## Controller
+controller:
+  ## Labels to set container specific security contexts
+  containerSecurityContext:
+    capabilities:
+      drop:
+        - all
+    readOnlyRootFilesystem: true
+
+  clusterAdminAccess:
+    enabled: true
+
+## Dex
+dex:
+  enabled: true
+
+  ## Labels to set container specific security contexts
+  containerSecurityContext:
+    capabilities:
+      drop:
+        - all
+    readOnlyRootFilesystem: true
+
+## Redis
+redis:
+  enabled: true
+
+  ## Labels to set container specific security contexts
+  containerSecurityContext:
+    capabilities:
+      drop:
+        - all
+    readOnlyRootFilesystem: true
+
+  ## Redis Pod specific security context
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    runAsNonRoot: true
+
+## Server
+server:
+  extraArgs:
+    - --insecure
+
+  ## Labels to set container specific security contexts
+  containerSecurityContext:
+    capabilities:
+      drop:
+        - all
+    readOnlyRootFilesystem: true
+
+  ingress:
+    enabled: true
+    annotations: {}
+#      cert-manager.io/cluster-issuer: vault-issuer
+#      traefik.ingress.kubernetes.io/router.tls: 'true'
+    hosts:
+      - argocd.local
+    paths:
+      - /
+#    tls:
+#      - secretName: argocd-tls
+#        hosts:
+#          - argocd.dc
+    https: false
+
+  ## ArgoCD config
+  ## reference https://github.com/argoproj/argo-cd/blob/master/docs/operator-manual/argocd-cm.yaml
+  configEnabled: true
+  config: {}
+    ## Argo CD's externally facing base URL (optional). Required when configuring SSO
+    #url: http://argocd.local
+    #application.resourceTrackingMethod: annotation+label
+
+  additionalApplications: []
+
+  ## Projects
+  ## reference: https://github.com/argoproj/argo-cd/blob/master/docs/operator-manual/
+  additionalProjects: []
+
+  ## Enable Admin ClusterRole resources.
+  ## Enable if you would like to grant rights to ArgoCD to deploy to the local Kubernetes cluster.
+  clusterAdminAccess:
+    enabled: true
+
+## Repo Server
+repoServer:
+  containerSecurityContext:
+    capabilities:
+      drop:
+        - all
+    readOnlyRootFilesystem: true
+
+  extraContainers:
+  - name: cmp-heqet
+    command: [/var/run/argocd/argocd-cmp-server]
+    image: lib42/heqet-cli:latest
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 999
+    volumeMounts:
+      - mountPath: /var/run/argocd
+        name: var-files
+      - mountPath: /home/argocd/cmp-server/plugins
+        name: plugins
+      - mountPath: /tmp
+        name: tmp-dir
+
+configs:
+  secret:
+    createSecret: true
