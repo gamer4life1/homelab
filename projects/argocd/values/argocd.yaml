@@ -9,7 +9,7 @@ global:
   image:
     repository: quay.io/argoproj/argocd
     tag: v2.2.3
-#    imagePullPolicy: IfNotPresent
+    imagePullPolicy: Always
   securityContext:
     runAsUser: 999
     runAsGroup: 999
@@ -113,6 +113,7 @@ repoServer:
   - name: cmp-heqet
     command: [/var/run/argocd/argocd-cmp-server]
     image: lib42/heqet-cli:latest
+    imagePullPolicy: Always
     securityContext:
       runAsNonRoot: true
       runAsUser: 999
