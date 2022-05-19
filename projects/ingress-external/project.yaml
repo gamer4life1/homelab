@@ -1,0 +1,17 @@
+config:
+  description: External Ingress Controller
+  networkPolicy:
+    config:
+      allowNamespace: false
+    rules:
+    #- allow-dns
+    - allow-ingress-traffic
+    #- allow-external-services
+    #- allow-kubeapi
+
+apps:
+- name: ingress-external
+  repoURL: https://helm.traefik.io/traefik
+  chart: traefik
+  targetRevision: 10.19.5
+  syncWave: '0'

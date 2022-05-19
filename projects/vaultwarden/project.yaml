@@ -1,0 +1,16 @@
+config:
+  description: Public Vaultwarden
+  networkPolicy:
+    groups:
+    - internet
+  
+  labels:
+    environment: external
+
+apps:
+- name: vaultwarden
+  # renovate: registryUrl=https://k8s-at-home.com/charts/
+  repoURL: https://k8s-at-home.com/charts/
+  chart: vaultwarden
+  targetRevision: 1.24.0
+  

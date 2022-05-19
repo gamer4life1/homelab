@@ -1,0 +1,27 @@
+image:
+  tag: 1.24.0
+
+vaultwarden:
+  host: vault.craftcat.dev
+  
+ingress:
+  external: true
+  labels:
+    environment: external
+  annotations:
+    #nginx.ingress.kubernetes.io/proxy-body-size: 4G
+    kubernetes.io/tls-acme: "true"
+    cert-manager.io/cluster-issuer: letsencrypt
+    traefik.ingress.kubernetes.io/router.tls: 'true'
+    kubernetes.io/ingress.class: ingress-external
+  tls:
+    - secretName: vaultwarden-tls
+      hosts:
+      - vault.craftcat.dev
+
+persistence:
+  enabled: true
+  storageClass: local-path
+  size: 2Gi
+  persistence:
+    enabled: true

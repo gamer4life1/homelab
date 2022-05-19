@@ -12,7 +12,7 @@ spec:
     server: 'https://kubernetes.default.svc'
   source:
     path: .
-    repoURL: 'https://github.com/lib42/heqet-apps'
+    repoURL: 'https://github.com/gamer4life1/homelab'
     targetRevision: main
   project: default
   syncPolicy:

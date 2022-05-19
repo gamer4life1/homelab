@@ -10,6 +10,6 @@ apps:
   
   # This will bootstrap our apps & keep them in sync
   - name: apps-of-heqet
-    repoURL: https://github.com/lib42/heqet-apps
+    repoURL: https://github.com/gamer4life1/homelab
     path: .
     targetRevision: main

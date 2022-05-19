@@ -1,0 +1,56 @@
+ingressClass:
+  enabled: true
+  isDefaultClass: false
+
+providers:
+  kubernetesCRD:
+    ingressClass: external
+
+kubernetesIngress:
+  labelSelector: environment=external
+  namespaces:
+  - vaultwarden
+
+ports:
+  web:
+    redirectTo: websecure
+  websecure:
+    tls:
+      enabled: true
+
+globalArguments: []
+additionalArguments:
+  - "--providers.kubernetesingress.ingressclass=ingress-external"
+
+ingressRoute:
+  dashboard:
+    enabled: false
+
+tlsOptions:
+  default:
+    preferServerCipherSuites: true
+    minVersion: VersionTLS12
+    sniStrict: true
+    cipherSuites:
+      - TLS_AES_128_GCM_SHA256
+      - TLS_AES_256_GCM_SHA384
+      - TLS_CHACHA20_POLY1305_SHA256
+      - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
+      - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+      - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+
+persistence:
+  enabled: true
+
+service:
+  enabled: true
+  type: LoadBalancer
+  annotations:
+    metallb.universe.tf/address-pool: external
+
+  externalIPs:
+  - 192.168.1.151
+
+logs:
+  general:
+    level: DEBUG
