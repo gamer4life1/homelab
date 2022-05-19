@@ -8,8 +8,8 @@ installCRDs: true
 global:
   image:
     repository: quay.io/argoproj/argocd
-    tag: v2.2.3
-    imagePullPolicy: Always
+    tag: v2.3.4
+#    imagePullPolicy: IfNotPresent
   securityContext:
     runAsUser: 999
     runAsGroup: 999
@@ -22,6 +22,14 @@ controller:
       drop:
         - all
     readOnlyRootFilesystem: true
+
+  ## Server metrics controller configuration
+  metrics:
+    enabled: true
+    service:
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '8082'
 
   clusterAdminAccess:
     enabled: true
@@ -67,28 +75,62 @@ server:
         - all
     readOnlyRootFilesystem: true
 
+  ## Server metrics service configuration
+  metrics:
+    enabled: true
+    service:
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '8083'
+      servicePort: 8083
+
   ingress:
     enabled: true
-    annotations: {}
-#      cert-manager.io/cluster-issuer: vault-issuer
-#      traefik.ingress.kubernetes.io/router.tls: 'true'
+    annotations:
+      cert-manager.io/cluster-issuer: vault-issuer
+      traefik.ingress.kubernetes.io/router.tls: 'true'
     hosts:
-      - argocd.local
+      - argocd.dc
     paths:
       - /
-#    tls:
-#      - secretName: argocd-tls
-#        hosts:
-#          - argocd.dc
+    tls:
+      - secretName: argocd-tls
+        hosts:
+          - argocd.dc
     https: false
+  # dedicated ingess for gRPC as documented at
+  # https://argoproj.github.io/argo-cd/operator-manual/ingress/
 
   ## ArgoCD config
   ## reference https://github.com/argoproj/argo-cd/blob/master/docs/operator-manual/argocd-cm.yaml
   configEnabled: true
-  config: {}
-    ## Argo CD's externally facing base URL (optional). Required when configuring SSO
-    #url: http://argocd.local
-    #application.resourceTrackingMethod: annotation+label
+  config:
+    # Argo CD's externally facing base URL (optional). Required when configuring SSO
+    url: https://argocd.dc
+    application.resourceTrackingMethod: annotation+label
+
+    oidc.config: |
+      name: Authentik
+      issuer: https://auth.dc/application/o/argocd/
+      clientID: 0c149045b7b87eb80e41fcdd3e788476472d7316
+      clientSecret: $oidc.auth0.clientSecret
+      requestedScopes: ["openid", "profile", "email", "groups"]
+ 
+  rbacConfig:
+    policy.csv: |
+      g, ArgoCDAdmins, role:admin
+
+  # Mount public CA cert
+  volumeMounts: []
+#  - name: certificate
+#    mountPath: /etc/ssl/certs/ca.crt
+#    subPath: ca
+
+  volumes: []
+#  - name: certificate
+#    secret:
+#      secretName: ca-cert
+#      defaultMode: 420
 
   additionalApplications: []
 
@@ -109,11 +151,48 @@ repoServer:
         - all
     readOnlyRootFilesystem: true
 
+  ## Repo server metrics service configuration
+  metrics:
+    enabled: true
+    service:
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '8084'
+      servicePort: 8084
+
+#  volumes:
+#    - name: cmp-plugins
+#      emptyDir: {}
+
+#  volumeMounts:
+#  - mountPath: /home/argocd/cmp-server/plugins
+#    name: cmp-plugins
+
+  initContainers:
+  - name: copy-cmp-server
+    image: quay.io/argoproj/argocd:v2.3.4
+    command:
+    - cp
+    - -n
+    - /usr/local/bin/argocd
+    - /var/run/argocd/argocd-cmp-server
+    volumeMounts:
+      - mountPath: /var/run/argocd
+        name: var-files
+
   extraContainers:
   - name: cmp-heqet
-    command: [/var/run/argocd/argocd-cmp-server]
+    command: ["/bin/sh","-c"]
+    args: [ 'HELM_CACHE_HOME=/tmp helm plugin install https://github.com/lib42/helm-heqet ; sed -i "s/bin\/bash\$/bin\/sh/" /helm-working-dir/plugins/helm-heqet/heqet.sh ; /var/run/argocd/argocd-cmp-server' ]
     image: lib42/heqet-cli:latest
     imagePullPolicy: Always
+    env:
+      - name: HELM_CACHE_HOME
+        value: /helm-working-dir
+      - name: HELM_CONFIG_HOME
+        value: /helm-working-dir
+      - name: HELM_DATA_HOME
+        value: /helm-working-dir
     securityContext:
       runAsNonRoot: true
       runAsUser: 999
@@ -124,7 +203,20 @@ repoServer:
         name: plugins
       - mountPath: /tmp
         name: tmp-dir
+      - mountPath: /helm-working-dir
+        name: helm-working-dir
+
+  ## Repo server rbac rules
+  # rbac:
+  #   - apiGroups:
+  #     - argoproj.io
+  #     resources:
+  #     - applications
+  #     verbs:
+  #     - get
+  #     - list
+  #     - watch
 
 configs:
   secret:
-    createSecret: true
+    createSecret: false
